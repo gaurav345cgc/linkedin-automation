@@ -1,0 +1,15 @@
+module.exports = [
+  'SDR',
+  'Sales Development Representative',
+  'Account Executive',
+  'AE',
+  'BDR',
+  'Business Development Representative',
+  'Sales Manager',
+  'Head of Sales',
+  'VP Sales',
+  'Revenue Operations',
+  'Outbound Sales',
+  'Lead Generation',
+  'Prospecting',
+];
