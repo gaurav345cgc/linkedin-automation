@@ -66,6 +66,15 @@ async function connectVpn(configPath) {
     ? configPath
     : path.join(process.cwd(), configPath);
 
+  if (!fs.existsSync(absConfig)) {
+    throw new Error(
+      `OpenVPN config not found: ${absConfig}. Fix VPN_CONFIGS to point to real .ovpn paths (e.g. "${path.join(
+        'vpn',
+        'proton-us.ovpn',
+      )}").`,
+    );
+  }
+
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const logFile = path.join(LOG_DIR, `openvpn-${timestamp}.log`);
   const pidFile = path.join(os.tmpdir(), `openvpn-${timestamp}.pid`);
@@ -87,11 +96,26 @@ async function connectVpn(configPath) {
   console.log('[vpnManager] Starting OpenVPN with config:', absConfig);
 
   const child = spawn(cmd, args, {
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  child.stdout.on('data', (buf) => {
+    const s = String(buf).trim();
+    if (s) console.log('[vpnManager:stdout]', s);
+  });
+  child.stderr.on('data', (buf) => {
+    const s = String(buf).trim();
+    if (s) console.error('[vpnManager:stderr]', s);
   });
 
   child.on('error', (err) => {
     console.error('[vpnManager] openvpn spawn error:', err.message);
+  });
+
+  child.on('close', (code) => {
+    if (code && code !== 0) {
+      console.error('[vpnManager] openvpn process exited with code:', code);
+    }
   });
 
   await waitForLogReady(logFile);
